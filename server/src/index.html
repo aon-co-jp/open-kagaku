@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>open-kagaku: 薬品シミュレーター(教育・研究用) / Chemistry & OTC drug simulator</title>
+<style>
+  body { font-family: sans-serif; background: #12181a; color: #eef5f2; max-width: 760px; margin: 0 auto; padding: 16px; }
+  h1 { font-size: 1.3rem; }
+  h2 { font-size: 1.05rem; margin-top: 24px; }
+  .disclosure { background: #3a1a1a; border: 1px solid #d94141; border-radius: 8px; padding: 10px 12px; font-size: 0.85rem; line-height: 1.5; margin-bottom: 14px; }
+  .nav a { color: #6fd9c8; }
+  label { display: block; margin: 8px 0 2px; font-size: 0.9rem; }
+  input, select { width: 100%; padding: 6px 8px; border-radius: 6px; border: 1px solid #3a5a55; background: #172422; color: #eef5f2; box-sizing: border-box; }
+  button { margin-top: 10px; padding: 8px 16px; border-radius: 8px; border: none; background: #41d9a4; color: #0e1a17; font-weight: bold; cursor: pointer; }
+  .result { margin-top: 10px; white-space: pre-line; font-size: 0.9rem; background: #172422; border-radius: 8px; padding: 10px 12px; }
+  .warn { border: 1px solid #d9a441; }
+</style>
+</head>
+<body>
+  <h1>🧪 open-kagaku(教育・研究用) / Chemistry &amp; OTC drug simulator</h1>
+  <div class="disclosure">
+    <strong>重要な免責事項:</strong> これは医療機器・医薬品ソフトウェアではなく、教育・研究・設計検討用の参考ツールです。実際の服薬判断・処方・製剤設計には薬剤師・医師等の有資格者によるレビューが必須であり、本ツールの出力を根拠に服薬量を決定してはなりません。<br /><br />
+    <strong>Honest disclosure:</strong> This is not a medical device or pharmaceutical software — it is an educational/research reference tool only. A licensed pharmacist or physician must review any real dosing/formulation decision. Do not decide actual dosages based on this tool's output.
+  </div>
+  <div class="nav">
+    <a href="http://127.0.0.1:4701/" id="open-cg-cad-link">← open-cg-cad(AI工務店&AI建設)へ / To open-cg-cad</a>
+  </div>
+
+  <h2>🧬 化学式表示 / Molecular formula lookup</h2>
+  <label>有効成分名(英語) / Ingredient name (English)<input type="text" id="formula-name" placeholder="e.g. acetaminophen" /></label>
+  <button type="button" id="formula-btn">検索 / Look up</button>
+  <div class="result" id="formula-result"></div>
+
+  <h2>💊 風邪薬配合スクリーニング / Cold medicine formulation check</h2>
+  <label>化学成分名(カンマ区切り) / Chemical ingredients (comma-separated)<input type="text" id="formulation-chem" placeholder="acetaminophen, dextromethorphan, guaifenesin" /></label>
+  <label>漢方処方名(任意) / Kampo formula (optional)<input type="text" id="formulation-kampo" placeholder="葛根湯" /></label>
+  <button type="button" id="formulation-btn">配合チェック / Check formulation</button>
+  <div class="result" id="formulation-result"></div>
+
+  <h2>🌿 漢方の甘草重複チェック / Kampo glycyrrhiza overlap check</h2>
+  <label>漢方処方名(カンマ区切り) / Kampo formulas (comma-separated)<input type="text" id="kampo-overlap-names" placeholder="葛根湯, 麻黄湯" /></label>
+  <button type="button" id="kampo-overlap-btn">チェック / Check</button>
+  <div class="result" id="kampo-overlap-result"></div>
+
+  <h2>🩺 単一処方の推奨 / Single-formula recommendation</h2>
+  <label>必要な適応(カンマ区切り: throat, respiratory, nasal, cold_flu_early_stage) / Needed categories</label>
+  <input type="text" id="recommend-categories" placeholder="throat, respiratory" />
+  <button type="button" id="recommend-btn">推奨を確認 / Get recommendation</button>
+  <div class="result" id="recommend-result"></div>
+
+  <h2>💊 ビタミン過剰摂取チェック / Vitamin overconsumption check</h2>
+  <label>成分 / Item
+    <select id="vitamin-item">
+      <option value="niacin_vitamin_b3">ナイアシン(B3) / Niacin</option>
+      <option value="vitamin_b6">ビタミンB6 / Vitamin B6</option>
+      <option value="folic_acid">葉酸 / Folic acid</option>
+      <option value="preformed_vitamin_a">ビタミンA / Preformed Vitamin A</option>
+      <option value="supplemental_beta_carotene">βカロテン(サプリ) / Beta-carotene (supplement)</option>
+      <option value="caffeine">カフェイン / Caffeine</option>
+    </select>
+  </label>
+  <label>各摂取源のmg(カンマ区切り、例: サプリ20 + 栄養ドリンク20) / Intake per source in mg (comma-separated)<input type="text" id="vitamin-sources" placeholder="20, 20" /></label>
+  <button type="button" id="vitamin-btn">チェック / Check</button>
+  <div class="result" id="vitamin-result"></div>
+
+<script>
+const API_BASE = location.pathname.endsWith("/") ? location.pathname : location.pathname + "/";
+function apiUrl(path) { return API_BASE + path.replace(/^\//, ""); }
+
+async function postJson(path, body) {
+  const res = await fetch(apiUrl(path), { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  return { ok: res.ok, data: await res.json() };
+}
+
+document.getElementById("formula-btn").addEventListener("click", async () => {
+  const el = document.getElementById("formula-result");
+  el.textContent = "検索中... / Looking up...";
+  const { data } = await postJson("v1/molecular-formula", { ingredient_name: document.getElementById("formula-name").value });
+  el.textContent = data.ok ? `分子式 / Formula: ${data.formula}` : `エラー / Error: ${data.error}`;
+});
+
+document.getElementById("formulation-btn").addEventListener("click", async () => {
+  const el = document.getElementById("formulation-result");
+  el.textContent = "チェック中... / Checking...";
+  const chemNames = document.getElementById("formulation-chem").value.split(",").map((s) => s.trim()).filter(Boolean);
+  const kampo = document.getElementById("formulation-kampo").value.trim() || null;
+  const { data } = await postJson("v1/formulation/check", { chemical_ingredient_names: chemNames, kampo_formula_name: kampo });
+  if (!data.ok) { el.textContent = `エラー / Error: ${data.error}`; el.classList.remove("warn"); return; }
+  const warn = data.duplicate_drug_class_warnings.length > 0;
+  el.classList.toggle("warn", warn);
+  el.textContent =
+    `化学成分 / Chemical: ${data.chemical_ingredients.join(", ") || "(none)"}\n` +
+    `漢方 / Kampo: ${data.kampo_formula || "(none)"}\n` +
+    (warn ? `⚠ 薬効分類の重複 / Duplicate drug class: ${data.duplicate_drug_class_warnings.join(", ")}\n` : "") +
+    `\n${data.disclaimer_ja}`;
+});
+
+document.getElementById("kampo-overlap-btn").addEventListener("click", async () => {
+  const el = document.getElementById("kampo-overlap-result");
+  el.textContent = "チェック中... / Checking...";
+  const names = document.getElementById("kampo-overlap-names").value.split(",").map((s) => s.trim()).filter(Boolean);
+  const { data } = await postJson("v1/kampo/overlap-check", { formula_names: names });
+  if (!data.ok) { el.textContent = `エラー / Error: ${data.error}`; el.classList.remove("warn"); return; }
+  el.classList.toggle("warn", data.warning);
+  el.textContent = data.warning ? `⚠ ${data.message_ja}\n\n${data.message_en}` : "甘草の重複は検出されませんでした / No glycyrrhiza overlap detected.";
+});
+
+document.getElementById("recommend-btn").addEventListener("click", async () => {
+  const el = document.getElementById("recommend-result");
+  el.textContent = "確認中... / Checking...";
+  const categories = document.getElementById("recommend-categories").value.split(",").map((s) => s.trim()).filter(Boolean);
+  const { data } = await postJson("v1/kampo/recommend", { categories });
+  if (!data.ok) { el.textContent = `エラー / Error: ${data.error}`; return; }
+  el.textContent = data.single_formula_available ? `${data.message_ja}\n\n${data.message_en}` : `${data.message_ja}\n\n${data.message_en}`;
+});
+
+document.getElementById("vitamin-btn").addEventListener("click", async () => {
+  const el = document.getElementById("vitamin-result");
+  el.textContent = "チェック中... / Checking...";
+  const item = document.getElementById("vitamin-item").value;
+  const sources = document.getElementById("vitamin-sources").value.split(",").map((s) => Number(s.trim())).filter((n) => !Number.isNaN(n));
+  const { data } = await postJson("v1/vitamin/check", { item, intake_sources_mg: sources });
+  if (!data.ok) { el.textContent = `エラー / Error: ${data.error}`; el.classList.remove("warn"); return; }
+  el.classList.toggle("warn", data.warning);
+  el.textContent = data.warning
+    ? `⚠ 合計 ${data.total_intake_mg}mg (上限目安 ${data.upper_limit_mg}mg)\n${data.risk_note_ja}\n\n${data.risk_note_en}`
+    : "耐容上限量の範囲内です / Within the reference upper limit.";
+});
+</script>
+</body>
+</html>

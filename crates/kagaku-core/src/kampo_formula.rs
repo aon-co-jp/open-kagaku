@@ -71,6 +71,26 @@ pub fn known_formulas() -> Vec<KampoFormula> {
             traditional_indication: "熱感を伴う喘鳴・咳(気管支炎・気管支喘息等)に伝統的に用いられるとされる。",
             indication_categories: vec![IndicationCategory::Respiratory],
         },
+        KampoFormula {
+            // 小柴胡湯+半夏厚朴湯の合方(2026-08-25追加、ユーザー指示
+            // 「喉と気管支にも効く良い所どりなハイブリッド漢方薬」への
+            // 対応)。構成生薬はGoogle検索で確認済み。
+            name: "柴朴湯",
+            herbal_components: vec!["柴胡", "半夏", "黄芩", "人参", "大棗", "甘草", "生姜", "厚朴", "茯苓", "蘇葉"],
+            traditional_indication: "喉のつかえ感・異物感(半夏厚朴湯由来)と、気管支炎・咳・喘鳴等の呼吸器症状(小柴胡湯由来)の両方に伝統的に用いられるとされる合方。",
+            indication_categories: vec![IndicationCategory::Throat, IndicationCategory::Respiratory],
+        },
+        KampoFormula {
+            // 2026-08-25追加(ユーザー指示「喉と肺の両方に良い漢方薬」への
+            // 対応)。16種類の生薬から成る処方で、構成生薬はメーカー公開の
+            // 処方情報(ツムラ清肺湯エキス顆粒)でGoogle検索により確認済み。
+            name: "清肺湯",
+            herbal_components: vec![
+                "当帰", "麦門冬", "茯苓", "黄芩", "桔梗", "杏仁", "山梔子", "桑白皮", "大棗", "陳皮", "天門冬", "貝母", "甘草", "五味子", "生姜", "竹茹",
+            ],
+            traditional_indication: "喉・気管・肺等の呼吸器全体の炎症、黄色く粘り気のある痰を伴う咳(気管支炎等)に伝統的に用いられるとされる。",
+            indication_categories: vec![IndicationCategory::Throat, IndicationCategory::Respiratory],
+        },
     ]
 }
 
@@ -246,6 +266,26 @@ mod tests {
         // (小青竜湯=鼻のみ、麻杏甘石湯=気管支のみ)。
         let recommendation = recommend_combined_formula(&[IndicationCategory::Nasal, IndicationCategory::Respiratory]);
         assert!(matches!(recommendation, CombinedFormulaRecommendation::NoSingleFormulaFound { .. }));
+    }
+
+    #[test]
+    fn saibokuto_is_a_documented_throat_and_respiratory_hybrid_of_two_formulas() {
+        let f = find_by_name("柴朴湯").unwrap();
+        assert!(f.indication_categories.contains(&IndicationCategory::Throat));
+        assert!(f.indication_categories.contains(&IndicationCategory::Respiratory));
+        // 半夏厚朴湯由来(喉)+小柴胡湯由来(気管支)の生薬が両方含まれる。
+        assert!(f.herbal_components.contains(&"厚朴")); // 半夏厚朴湯由来
+        assert!(f.herbal_components.contains(&"柴胡")); // 小柴胡湯由来
+        assert!(f.contains_glycyrrhiza());
+    }
+
+    #[test]
+    fn seihaito_covers_throat_and_respiratory_with_sixteen_herbal_components() {
+        let f = find_by_name("清肺湯").unwrap();
+        assert!(f.indication_categories.contains(&IndicationCategory::Throat));
+        assert!(f.indication_categories.contains(&IndicationCategory::Respiratory));
+        assert_eq!(f.herbal_components.len(), 16);
+        assert!(f.contains_glycyrrhiza());
     }
 
     #[test]

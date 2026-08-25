@@ -1,3 +1,3 @@
 [workspace]
 resolver = "2"
-members = ["crates/kagaku-core"]
+members = ["crates/kagaku-core", "server"]

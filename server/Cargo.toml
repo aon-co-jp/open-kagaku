@@ -1,0 +1,16 @@
+[package]
+name = "open-kagaku-server"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+description = "open-kagakuの最小HTTP API+簡易UI。kagaku-coreの化学式表示・OTC医薬品DB・漢方処方DB・風邪薬配合スクリーニング・飲み合わせ注意喚起機能をJSON APIとWeb UIで公開する。"
+
+[dependencies]
+kagaku-core = { path = "../crates/kagaku-core" }
+open-runo-poem-compat = { path = "../../RPoem/crates/open-runo-poem-compat" }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+hyper = { version = "1.10", features = ["full"] }
+http-body-util = "0.1"
+bytes = "1.9"
