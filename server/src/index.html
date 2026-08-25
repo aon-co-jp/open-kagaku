@@ -68,6 +68,24 @@
 const API_BASE = location.pathname.endsWith("/") ? location.pathname : location.pathname + "/";
 function apiUrl(path) { return API_BASE + path.replace(/^\//, ""); }
 
+// 区切り文字として半角/全角カンマ・句読点・ピリオド・中点・セミコロン・
+// 半角/全角ハイフン・半角/全角アンダーライン・半角/全角スペース・改行を
+// 許容する(ユーザー指示「カンマ区切りもピリオドや、,区切りも、半角も
+// 全角スペース区切りも半角ハイフンも全角ハイフン区切りも、半角
+// アンダーラインも全角アンダーライン区切りも対応」への対応、
+// 2026-08-25追加)。漢方処方名・化学成分名など自由記述の欄で使う。
+// 連続する区切り文字・前後の空白は無視する。
+function splitList(value) {
+  return value.split(/[,，、.。・;；\-‐－_＿\s　]+/).map((s) => s.trim()).filter(Boolean);
+}
+
+// 適応分類欄専用の分割(`cold_flu_early_stage`のようにアンダーラインを
+// 含む識別子そのものを値として使うため、上記`splitList`とは別に
+// ハイフン・アンダーラインを区切り文字に含めない版を用意する)。
+function splitCategoryList(value) {
+  return value.split(/[,，、.。・;；\s　]+/).map((s) => s.trim()).filter(Boolean);
+}
+
 async function postJson(path, body) {
   const res = await fetch(apiUrl(path), { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
   return { ok: res.ok, data: await res.json() };
@@ -83,7 +101,7 @@ document.getElementById("formula-btn").addEventListener("click", async () => {
 document.getElementById("formulation-btn").addEventListener("click", async () => {
   const el = document.getElementById("formulation-result");
   el.textContent = "チェック中... / Checking...";
-  const chemNames = document.getElementById("formulation-chem").value.split(",").map((s) => s.trim()).filter(Boolean);
+  const chemNames = splitList(document.getElementById("formulation-chem").value);
   const kampo = document.getElementById("formulation-kampo").value.trim() || null;
   const { data } = await postJson("v1/formulation/check", { chemical_ingredient_names: chemNames, kampo_formula_name: kampo });
   if (!data.ok) { el.textContent = `エラー / Error: ${data.error}`; el.classList.remove("warn"); return; }
@@ -99,7 +117,7 @@ document.getElementById("formulation-btn").addEventListener("click", async () =>
 document.getElementById("kampo-overlap-btn").addEventListener("click", async () => {
   const el = document.getElementById("kampo-overlap-result");
   el.textContent = "チェック中... / Checking...";
-  const names = document.getElementById("kampo-overlap-names").value.split(",").map((s) => s.trim()).filter(Boolean);
+  const names = splitList(document.getElementById("kampo-overlap-names").value);
   const { data } = await postJson("v1/kampo/overlap-check", { formula_names: names });
   if (!data.ok) { el.textContent = `エラー / Error: ${data.error}`; el.classList.remove("warn"); return; }
   el.classList.toggle("warn", data.warning);
@@ -109,7 +127,7 @@ document.getElementById("kampo-overlap-btn").addEventListener("click", async () 
 document.getElementById("recommend-btn").addEventListener("click", async () => {
   const el = document.getElementById("recommend-result");
   el.textContent = "確認中... / Checking...";
-  const categories = document.getElementById("recommend-categories").value.split(",").map((s) => s.trim()).filter(Boolean);
+  const categories = splitCategoryList(document.getElementById("recommend-categories").value);
   const { data } = await postJson("v1/kampo/recommend", { categories });
   if (!data.ok) { el.textContent = `エラー / Error: ${data.error}`; return; }
   el.textContent = data.single_formula_available ? `${data.message_ja}\n\n${data.message_en}` : `${data.message_ja}\n\n${data.message_en}`;
@@ -119,7 +137,7 @@ document.getElementById("vitamin-btn").addEventListener("click", async () => {
   const el = document.getElementById("vitamin-result");
   el.textContent = "チェック中... / Checking...";
   const item = document.getElementById("vitamin-item").value;
-  const sources = document.getElementById("vitamin-sources").value.split(",").map((s) => Number(s.trim())).filter((n) => !Number.isNaN(n));
+  const sources = splitCategoryList(document.getElementById("vitamin-sources").value).map(Number).filter((n) => !Number.isNaN(n));
   const { data } = await postJson("v1/vitamin/check", { item, intake_sources_mg: sources });
   if (!data.ok) { el.textContent = `エラー / Error: ${data.error}`; el.classList.remove("warn"); return; }
   el.classList.toggle("warn", data.warning);
