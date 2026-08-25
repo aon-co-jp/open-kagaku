@@ -38,3 +38,4 @@ pub mod cold_medicine_formulation;
 pub mod kampo_formula;
 pub mod molecular_formula;
 pub mod otc_ingredient;
+pub mod vitamin_supplement;
