@@ -1,0 +1,9 @@
+[package]
+name = "kagaku-core"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+description = "open-kagaku: OTC医薬品有効成分・漢方処方の参考データベースと、風邪薬(漢方+化学薬品ハイブリッド)配合のCADライクな安全性一次チェックツール(教育・研究目的)。"
+
+[dependencies]
+thiserror = "1"
