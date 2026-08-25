@@ -21,6 +21,24 @@ GitHubリポジトリ: [aon-co-jp/open-kagaku](https://github.com/aon-co-jp/open
 
 ## HANDOFF
 
+- **2026-08-25(続き6) easy-web.tokyoへ実際にデプロイして公開(ユーザー
+  指示②)**: `/root/easy-web.tokyo/open-kagaku`へ`git clone`。
+  依存はcrates.ioの`thiserror`のみでsibling path依存が無いため、
+  open-cg-cadと違いVPS側の追加clone/symlinkは不要だった(`RPoem`は
+  既存の共有クローンをそのまま使用)。ポート`8106`を割り当て
+  (`installer/open-kagaku.service`新設、`OPEN_KAGAKU_SERVER_BIND=
+  127.0.0.1:8106`)、`systemctl enable --now`で起動、`/healthz`を
+  VPS内部から確認。`domains.toml`へ`path_prefix = "/open-kagaku"`
+  (`strip_prefix = true`)を追加(`/v1`の追加専有は不要、相対パス
+  設計のおかげ)。`systemctl restart open-web-server`で反映後、実際に
+  外部から`https://easy-web.tokyo/open-kagaku/`(200、タイトル確認)・
+  `POST https://easy-web.tokyo/open-kagaku/v1/molecular-formula`
+  (200、aspirinの分子式C9H8O4を正しく返す)を確認した——本物の
+  インターネット経由での公開を実証。`open-kagaku.service`は`enabled`
+  (再起動後も自動起動)。
+  - 次にすべきこと: open-cg-cad優先順位④(WebGL/WebGPU等)は
+    `open-cg-cad/CLAUDE.md`参照。open-kagaku自体の拡充は次回課題。
+
 - **2026-08-25(続き5) open-cg-cadとの相互リンクを実装(ユーザー指示
   「①open-cg-cadからopen-kagakuへの導線設置」)**: `server/src/
   index.html`に、open-cg-cad側が読む`open-cg-cad.openKagakuBase`
