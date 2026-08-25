@@ -68,6 +68,20 @@
 const API_BASE = location.pathname.endsWith("/") ? location.pathname : location.pathname + "/";
 function apiUrl(path) { return API_BASE + path.replace(/^\//, ""); }
 
+// open-cg-cadとの相互リンク(2026-08-25追加)。open-cg-cad側が読む
+// "open-cg-cad.openKagakuBase"キーへ自分自身のURLを書き込んでおくことで、
+// easy-web.tokyo等の同一オリジン配下にpath prefixで両アプリが同居する
+// 本番環境では、open-cg-cad側の「🧪 open-kagaku」リンクが正しい遷移先を
+// 指せるようにする(open-english⇄open-cg-cadの既存パターンと同型)。
+(function () {
+  try {
+    var savedBase = localStorage.getItem("open-kagaku.openCgCadBase");
+    if (savedBase) document.getElementById("open-cg-cad-link").href = savedBase;
+    var ownBase = location.origin + location.pathname.replace(/[^/]*$/, "");
+    localStorage.setItem("open-cg-cad.openKagakuBase", ownBase);
+  } catch (e) { /* localStorage不可でもリンクは既定値のまま機能する */ }
+})();
+
 // 区切り文字として半角/全角カンマ・句読点・ピリオド・中点・セミコロン・
 // 半角/全角ハイフン・半角/全角アンダーライン・半角/全角スペース・改行を
 // 許容する(ユーザー指示「カンマ区切りもピリオドや、,区切りも、半角も

@@ -21,6 +21,17 @@ GitHubリポジトリ: [aon-co-jp/open-kagaku](https://github.com/aon-co-jp/open
 
 ## HANDOFF
 
+- **2026-08-25(続き5) open-cg-cadとの相互リンクを実装(ユーザー指示
+  「①open-cg-cadからopen-kagakuへの導線設置」)**: `server/src/
+  index.html`に、open-cg-cad側が読む`open-cg-cad.openKagakuBase`
+  localStorageキーへ自分自身のURLを書き込む処理と、open-cg-cad側が
+  書き込む`open-kagaku.openCgCadBase`キーを読んでリンク先を上書きする
+  処理を追加(open-english⇄open-cg-cadの既存パターンと同型)。
+  open-cg-cad側にも同時に対応するリンクを追加した(詳細は
+  `open-cg-cad/CLAUDE.md`参照)。実際に両サーバーを起動し、`curl`で
+  両ページに互いへのリンク要素が実在することを確認した。
+  - 次にすべきこと: easy-web.tokyoへの実デプロイ(ユーザー指示②)。
+
 - **2026-08-25(続き4) 入力欄の区切り文字を柔軟化(ユーザー指示「カンマ
   区切りもピリオドや、,区切りも、半角も全角スペース区切りも半角
   ハイフンも全角ハイフン区切りも、半角アンダーラインも全角アンダー
