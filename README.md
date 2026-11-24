@@ -1,3 +1,5 @@
+> Latest translations / 翻訳の最新版: [0-LATEST-TRANSLATIONS.md](0-LATEST-TRANSLATIONS.md)
+
 # open-kagaku
 
 open-cg-cadの姉妹プロジェクト(プラグイン的位置づけ)。OTC(市販)医薬品
